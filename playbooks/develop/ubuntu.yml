@@ -62,7 +62,7 @@
       - tcl8.5-dev
       - tk8.5-dev
     # Version compare filter, http://docs.ansible.com/ansible/playbooks_filters.html#version-comparison-filters
-    when: {{ ansible_distribution_version | version_compare('14.04', '<') }}
+    when: ansible_distribution_version | version_compare('14.04', 'lt')
     become: yes
     become_user: root
 
@@ -72,7 +72,7 @@
       - libtiff5-dev
       - tcl8.6-dev
       - tk8.6-dev
-    when: {{ ansible_distribution_version | version_compare('14.04', '>=') }}
+    when: ansible_distribution_version | version_compare('14.04', 'ge')
     become: yes
     become_user: root
 
