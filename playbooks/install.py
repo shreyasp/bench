@@ -49,8 +49,9 @@ def install_bench(args):
 	if not success:
 		could_not_install('Ansible')
 
-	if is_sudo_user():
-		raise Exception('Please run this script as a non-root user with sudo privileges, but without using sudo')
+	# if is_sudo_user():
+		# In setup_frappe.sh we create a new user 'frappe' if we are logged in as 'root'
+		# raise Exception('Please run this script as a non-root user with sudo privileges, but without using sudo')
 
 	# clone bench repo
 	clone_bench_repo()
@@ -124,15 +125,41 @@ def could_not_install(package):
 def is_sudo_user():
 	return os.geteuid() == 0
 
+def get_passwords():
+	import uuid
+	passwords = {
+		"frappe_user_password": "",
+		"default_root_password": "",
+		"admin_password": ""
+	}
+
+	# Generate 32 characters passwords for user, mysql_root and admin
+	for key in passwords.keys():
+		passwords[key] = uuid.uuid4().hex
+
+	return passwords
+
+def get_extra_vars(args):
+		# Extra variables can be passed to playbook in json format. So we will load all the args passed
+		# to the script as json and pass it as extra vars.
+		passwords = get_passwords()
+		extra_vars = dict(passwords.items() + vars(args).items())
+
+		if is_sudo_user():
+			create_frappe_user = True
+		else:
+			create_frappe_user = False
+
+		extra_vars.update(create_frappe_user=create_frappe_user)
+
+		extra_vars_json = os.path.join(os.path.abspath(os.path.expanduser('~')), 'extra_vars.json')
+		with open(extra_vars_json, mode='w') as f:
+			json.dump(extra_vars, f, indent=1, sort_keys=True)
+
+		return "@" + extra_vars_json
+
 def run_playbook(playbook_name, sudo=False, args=None):
-	# Extra variables can be passed to playbook in json format. So we will load all the args passed
-	# to the script as json and pass it as extra vars.
-	extra_vars_json = os.path.join(os.path.abspath(os.path.expanduser('~')), 'extra_vars.json')
-	with open(extra_vars_json, mode='w') as f:
-		json.dump(vars(args), f, indent=1, sort_keys=True)
-
-	extra_vars = "@" + extra_vars_json
-
+	extra_vars = get_extra_vars(args)
 	args = ['ansible-playbook', '-c', 'local',  playbook_name, "-e", extra_vars]
 	if sudo:
 		args.append('-K')

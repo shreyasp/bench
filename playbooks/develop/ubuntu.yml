@@ -76,6 +76,14 @@
     become: yes
     become_user: root
 
+  # Create Frappe user
+  - name: Create frappe user
+    user:
+      name: '{{ frappe_user }}'
+      password: '{{ frappe_user_passwd }}'
+      shell: /bin/bash
+    when: '{{ create_frappe_user }}'
+
   # install MariaDB
   - include: includes/mariadb_ubuntu.yml
 
@@ -87,3 +95,11 @@
 
   # setup frappe-bench
   - include: includes/setup_bench.yml
+
+  # write passwords to file
+  - name: Write passwords to frappe_passwords.txt
+    lineinfile: dest=~/frappe_passwords.txt line {{ item }} create=yes
+    with_items:
+      - '{{ frappe_user_password }}'
+      - '{{ mysql_root_password }}'
+      - '{{ admin_password }}'

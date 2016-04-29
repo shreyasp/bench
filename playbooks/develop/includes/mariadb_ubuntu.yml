@@ -1,4 +1,5 @@
 ---
+  # Add MariaDB APT-KEY as per the version
   - name: Add apt key for Ubuntu versions before 16.04 Xenial
     apt_key: keyserver=hkp://keyserver.ubuntu.com:80 id=0xcbcb082a1bb943db state=present
     become: yes
@@ -12,11 +13,13 @@
     become_user: root
     when: ansible_distribution_version | version_compare('16.04', 'ge')
 
+  # Add MariaDB Repository
   - name: Add apt repositry
     apt_repository: repo='deb [arch=amd64,i386] http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.1/ubuntu {{ ansible_distribution_release }} main' state=present
     become: yes
     become_user: root
 
+  # Install MariaDB
   - name: apt-get install
     apt: pkg={{ item }} update_cache=yes state=present
     with_items:
@@ -24,5 +27,43 @@
       - mariadb-client
       - mariadb-common
       - libmariadbclient-dev
+    become: yes
+    become_user: root
+
+  # Change the MariaDB root password
+  - name: Change mysql root password
+    mysql_user:
+      login_user: root
+      login_password: ''
+      name: root
+      password: {{ mysql_root_password }}
+      priv: *.*:ALL_GRANT
+      host: {{ item }}
+      with_items:
+        - localhost
+        - 127.0.0.1
+        - ::1
+
+  # Configure MariaDB
+  - name: Configure MariaDB
+    lineinfile: dest=/etc/mysql/conf.d/frappe.cnf line={{ item }} backup=yes create=yes
+    with_items:
+      - "[mysqld]"
+      - "innodb-file-format=barracuda"
+      - "innodb-file-per-table=1"
+      - "innodb-large-prefix=1"
+      - "character-set-client-handshake = FALSE"
+      - "character-set-server = utf8mb4"
+      - "collation-server = utf8mb4_unicode_ci"
+      - ""
+      - "[mysql]"
+      - "default-character-set = utf8mb4"
+    become: yes
+    become_user: root
+    when: {{ setup_production }}
+
+  # Restart the MariaDB service
+  - name: Restart MariaDB service
+    service: name=mysql state=restarted
     become: yes
     become_user: root
