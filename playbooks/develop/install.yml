@@ -3,13 +3,7 @@
   vars_prompt:
     - name: mysql_root_password
       prompt: "Enter root password for MySQL"
-      default: {{ default_root_password }}
       when: ansible_distribution == 'Ubuntu'
-
-    - name: site_name
-      prompt: "Please enter name for the site: "
-      default: "site1.local"
-      when: {{ setup_production }}
 
 - include: macosx.yml
   when: ansible_distribution == 'MacOSX'

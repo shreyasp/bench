@@ -13,7 +13,7 @@ def install_bench(args):
 	success = run_os_command({
 		'apt-get': [
 			'sudo apt-get update',
-			'sudo apt-get install -y git build-essential python-setuptools python-dev'
+			'sudo apt-get install -y git build-essential python-setuptools python-dev libssl-dev libffi-dev'
 		],
 		'yum': [
 			'sudo yum groupinstall -y "Development tools"',
@@ -40,6 +40,12 @@ def install_bench(args):
 	run_os_command({
 		'apt-get': 'sudo python get-pip.py',
 		'yum': 'sudo python get-pip.py',
+	})
+
+	# In rare case, we are facing error with setup-tools, wherein older version of setuptools will be
+	# bundled with python, perform an upgrade to avoid error
+	run_os_command({
+		'pip': 'sudo pip install --upgrade setuptools'
 	})
 
 	success = run_os_command({
@@ -129,7 +135,7 @@ def get_passwords():
 	import uuid
 	passwords = {
 		"frappe_user_password": "",
-		"default_root_password": "",
+		"mysql_root_password": "",
 		"admin_password": ""
 	}
 
@@ -149,8 +155,9 @@ def get_extra_vars(args):
 			create_frappe_user = True
 		else:
 			create_frappe_user = False
+			frappe_user = getpass.getuser()
 
-		extra_vars.update(create_frappe_user=create_frappe_user)
+		extra_vars.update(create_frappe_user=create_frappe_user, frappe_user=frappe_user)
 
 		extra_vars_json = os.path.join(os.path.abspath(os.path.expanduser('~')), 'extra_vars.json')
 		with open(extra_vars_json, mode='w') as f:
