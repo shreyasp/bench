@@ -155,7 +155,8 @@ def get_extra_vars(args):
 			create_frappe_user = True
 		else:
 			create_frappe_user = False
-			frappe_user = getpass.getuser()
+
+		frappe_user = getpass.getuser()
 
 		extra_vars.update(create_frappe_user=create_frappe_user, frappe_user=frappe_user)
 
@@ -167,7 +168,7 @@ def get_extra_vars(args):
 
 def run_playbook(playbook_name, sudo=False, args=None):
 	extra_vars = get_extra_vars(args)
-	args = ['ansible-playbook', '-c', 'local',  playbook_name, "-e", extra_vars]
+	args = ['sudo', 'ansible-playbook', '-c', 'local',  playbook_name, "-e", extra_vars]
 	if sudo:
 		args.append('-K')
 
