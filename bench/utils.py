@@ -2,7 +2,6 @@ import os, sys, shutil, subprocess, logging, itertools, requests, json, platform
 from distutils.spawn import find_executable
 import bench
 from bench import env
-from bench.config.production_setup import service
 
 class PatchError(Exception):
 	pass
@@ -680,6 +679,31 @@ def setup_fonts():
 	shutil.rmtree(fonts_path)
 	exec_cmd("fc-cache -fv")
 
+def is_running_systemd():
+	with open('/proc/1/comm') as f:
+		comm = f.read().strip()
+	if comm == "init":
+		return False
+	elif comm == "systemd":
+		return True
+	return False
+
+def service(service, option):
+	if os.path.basename(get_program(['systemctl']) or '') == 'systemctl' and is_running_systemd():
+		exec_cmd("sudo {service_manager} {option} {service}".format(service_manager='systemctl', option=option, service=service))
+	elif os.path.basename(get_program(['service']) or '') == 'service':
+		exec_cmd("sudo {service_manager} {service} {option} ".format(service_manager='service', service=service, option=option))
+	else:
+		# look for 'service_manager' and 'service_manager_command' in environment
+		service_manager = os.environ.get("BENCH_SERVICE_MANAGER")
+		if service_manager:
+			service_manager_command = (os.environ.get("BENCH_SERVICE_MANAGER_COMMAND")
+				or "{service_manager} {option} {service}").format(service_manager=service_manager, service=service, option=option)
+			exec_cmd(service_manager_command)
+
+		else:
+			raise Exception, 'No service manager found'
+
 def setup_firewall(ports):
 	firewall_exec = find_executable('firewall-cmd')
 	add_port = []
@@ -688,7 +712,7 @@ def setup_firewall(ports):
 		add_port += ['--add-port={port}/tcp'.format(port=port)]
 
 	try:
-		subprocess.check_call([firewall_exec, add_port, '--permanent'])
+		subprocess.check_call([firewall_exec, '--permanent'] + add_port)
 		service('firewalld', 'restart')
 	except:
 		raise

@@ -1,4 +1,4 @@
-from bench.utils import get_program, exec_cmd, get_cmd_output, fix_prod_setup_perms, get_bench_name, find_executable, CommandFailedError
+from bench.utils import exec_cmd, get_cmd_output, fix_prod_setup_perms, get_bench_name, find_executable, CommandFailedError, service
 from bench.config.supervisor import generate_supervisor_config
 from bench.config.nginx import make_nginx_conf
 import os, subprocess
@@ -52,22 +52,6 @@ def disable_production(bench_path='.'):
 
 	reload_nginx()
 
-def service(service, option):
-	if os.path.basename(get_program(['systemctl']) or '') == 'systemctl' and is_running_systemd():
-		exec_cmd("sudo {service_manager} {option} {service}".format(service_manager='systemctl', option=option, service=service))
-	elif os.path.basename(get_program(['service']) or '') == 'service':
-		exec_cmd("sudo {service_manager} {service} {option} ".format(service_manager='service', service=service, option=option))
-	else:
-		# look for 'service_manager' and 'service_manager_command' in environment
-		service_manager = os.environ.get("BENCH_SERVICE_MANAGER")
-		if service_manager:
-			service_manager_command = (os.environ.get("BENCH_SERVICE_MANAGER_COMMAND")
-				or "{service_manager} {option} {service}").format(service_manager=service_manager, service=service, option=option)
-			exec_cmd(service_manager_command)
-
-		else:
-			raise Exception, 'No service manager found'
-
 def get_supervisor_confdir():
 	possiblities = ('/etc/supervisor/conf.d', '/etc/supervisor.d/', '/etc/supervisord/conf.d', '/etc/supervisord.d')
 	for possiblity in possiblities:
@@ -84,15 +68,6 @@ def remove_default_nginx_configs():
 
 def is_centos7():
 	return os.path.exists('/etc/redhat-release') and get_cmd_output("cat /etc/redhat-release | sed 's/Linux\ //g' | cut -d' ' -f3 | cut -d. -f1").strip() == '7'
-
-def is_running_systemd():
-	with open('/proc/1/comm') as f:
-		comm = f.read().strip()
-	if comm == "init":
-		return False
-	elif comm == "systemd":
-		return True
-	return False
 
 def reload_supervisor():
 	supervisorctl = find_executable('supervisorctl')
