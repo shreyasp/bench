@@ -678,3 +678,6 @@ def setup_fonts():
 	os.rename(os.path.join(fonts_path, 'usr_share_fonts'), '/usr/share/fonts')
 	shutil.rmtree(fonts_path)
 	exec_cmd("fc-cache -fv")
+
+def setup_firewall(port):
+	pass

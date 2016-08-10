@@ -153,6 +153,19 @@ def sync_domains(domains, site=None):
 	# if changed, success, else failure
 	sys.exit(0 if changed else 1)
 
+
+@click.command('firewall')
+@click.option('--port', multiple=True, help='Adds specified port to the firewall permanently.')
+def setup_firewall(port):
+	import os
+
+	if os.geteuid() != 0:
+		click.echo('To run this command you need to have superuser previleges')
+
+	else:
+		click.echo('You are previleged..!!')
+	# setup_firewall(port)
+
 setup.add_command(setup_sudoers)
 setup.add_command(setup_nginx)
 setup.add_command(reload_nginx)
@@ -170,3 +183,4 @@ setup.add_command(setup_fonts)
 setup.add_command(add_domain)
 setup.add_command(remove_domain)
 setup.add_command(sync_domains)
+setup.add_command(setup_firewall)
