@@ -157,14 +157,13 @@ def sync_domains(domains, site=None):
 @click.command('firewall')
 @click.option('--port', multiple=True, help='Adds specified port to the firewall permanently.')
 def setup_firewall(port):
-	import os
+	from bench.utils import setup_firewall
 
-	if os.geteuid() != 0:
-		click.echo('To run this command you need to have superuser previleges')
+	if not port:
+		click.echo("Please specify ports using '--port <port_number>'")
 
 	else:
-		click.echo('You are previleged..!!')
-	# setup_firewall(port)
+		setup_firewall(port)
 
 setup.add_command(setup_sudoers)
 setup.add_command(setup_nginx)

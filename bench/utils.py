@@ -2,6 +2,7 @@ import os, sys, shutil, subprocess, logging, itertools, requests, json, platform
 from distutils.spawn import find_executable
 import bench
 from bench import env
+from bench.config.production_setup import service
 
 class PatchError(Exception):
 	pass
@@ -679,5 +680,15 @@ def setup_fonts():
 	shutil.rmtree(fonts_path)
 	exec_cmd("fc-cache -fv")
 
-def setup_firewall(port):
-	pass
+def setup_firewall(ports):
+	firewall_exec = find_executable('firewall-cmd')
+	add_port = []
+
+	for port in ports:
+		add_port += ['--add-port={port}/tcp'.format(port=port)]
+
+	try:
+		subprocess.check_call([firewall_exec, add_port, '--permanent'])
+		service('firewalld', 'restart')
+	except:
+		raise
